@@ -6,4 +6,6 @@
  * Time: 12:06
  */
 
-echo "<h1>Welcome to soccer store</h1>";
+//echo "<h1>Welcome to soccer store</h1>";
+
+header("Location: publicSite/productList.php");
