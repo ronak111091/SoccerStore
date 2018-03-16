@@ -8,7 +8,7 @@
 
 
 require_once '../LIB_project1.php';
-
+authenticateAdmin();
 if(isset($_GET["task"]) && $_GET["task"]=="deleteRecord"){
     $productId = $_GET["id"];
     $product = getProductById($productId);
@@ -24,4 +24,6 @@ if(isset($_GET["task"]) && $_GET["task"]=="deleteRecord"){
     }
     $success=$success?"true":"false";
     header("Location: admin.php?success={$success}&message={$message}");
+}else{
+    header("Location: admin.php");
 }

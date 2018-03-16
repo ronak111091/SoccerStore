@@ -21,7 +21,7 @@
 
     authenticateAdmin();
 
-    function moveImageToUploads(){
+    /*function moveImageToUploads(){
         $newFileName = null;
         $extTypes = array("jpeg","jpg","png");
         if(file_exists($_FILES['image']['tmp_name']) && is_uploaded_file($_FILES['image']['tmp_name'])){
@@ -40,10 +40,10 @@
             }
         }
         return $newFileName;
-    }
+    }*/
 
 
-    if(isset($_POST["task"])){
+    /*if(isset($_POST["task"])){
 
         if($_POST["task"]=="addRecord"){
             $fileName = moveImageToUploads();
@@ -67,7 +67,7 @@
                 echo '<div class="alert alert-success" role="alert">Product was successfully updated!</div>';
             }
         }
-    }
+    }*/
 
     //fetching results of delete product action
     if(isset($_GET["success"])){

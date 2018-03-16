@@ -12,7 +12,50 @@
 
     require_once '../LIB_project1.php';
     authenticateAdmin();
-    if(isset($_GET["insert"])){
+
+    if(isset($_POST["task"])){
+
+        if($_POST["task"]=="addRecord"){
+            $fileName = moveImageToUploads();
+            $success="false";
+            if(!empty($fileName)){
+                $result = addProduct($_POST["name"], $_POST["description"], $_POST["price"], $_POST["quantity"], $fileName, $_POST["salePrice"]);
+                if ($result) {
+                    $message = "Product was successfully added!";
+                    $success="true";
+                    header("Location: admin.php?success={$success}&message={$message}");
+                }else{
+                    $message = "An error occurred while adding the product!";
+                    header("Location: admin.php?success={$success}&message={$message}");
+                }
+            }else{
+                $message = "Invalid image uploaded!";
+                header("Location: addupdateproduct.php?insert=&success={$success}&message={$message}");
+            }
+        } else if($_POST["task"]=="updateRecord"){
+            $id = $_POST["id"];
+            $fileName = moveImageToUploads();
+            if(empty($fileName)){
+                $fileName = $_POST["existingImage"];
+            }
+            $result = updateProduct($id,$_POST["name"], $_POST["description"], $_POST["price"], $_POST["quantity"],$_POST["salePrice"], $fileName);
+            if ($result) {
+                $message = "Product was successfully updated!";
+                $success="true";
+                header("Location: admin.php?success={$success}&message={$message}");
+            }else{
+                $message = "An error occurred while adding the product!";
+                header("Location: admin.php?success={$success}&message={$message}");
+            }
+        }
+    }
+
+
+
+generateMessage();
+
+
+if(isset($_GET["insert"])){
         echo "<h1>Add Product</h1><br>";
         renderInsertUpdateProductForm();
     }else if(isset($_GET["update"])){

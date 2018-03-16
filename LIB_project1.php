@@ -7,7 +7,7 @@
  */
 //add reusable code like header and footer here
 
-    require_once 'Db.php';
+    require_once 'classes/Db.php';
 
     $db = new Db();
 
@@ -25,7 +25,25 @@
         }
     }
 
-    function renderHeader($activeTab=1){
+    function renderHeader(){
+        $header = <<<EOT
+<header>
+<h1>Soccer Store</h1>
+</header>
+EOT;
+    echo $header;
+    }
+
+    function renderFooter(){
+        $footer = <<<EOT
+<footer>
+&copy; 2018 All rights reserved.
+</footer>
+EOT;
+echo $footer;
+    }
+
+    function renderPublicSiteTabs($activeTab=1){
         $homeVal = $activeTab==1?"active":"";
         $cartVal = $activeTab==1?"":"active";
         $header=<<<EOT
@@ -39,10 +57,6 @@
 </ul><br>
 EOT;
     echo $header;
-    }
-
-    function renderFooter(){
-
     }
 
     function displayProducts($page=1,$query=""){
@@ -88,6 +102,36 @@ EOT;
         echo $output;
     }
 
+    function moveImageToUploads(){
+        $newFileName = null;
+        $extTypes = array("jpeg","jpg","png");
+        if(file_exists($_FILES['image']['tmp_name']) && is_uploaded_file($_FILES['image']['tmp_name'])){
+            $file = $_FILES["image"];
+            $fileName = $file["name"];
+            $fileTmpName = $file["tmp_name"];
+            $fileSize = $file["size"];
+            $fileExtArr = explode(".",$fileName);
+            $fileExt = strtolower(end($fileExtArr));
+            if(in_array($fileExt,$extTypes)){
+                if($fileSize<1000000){
+                    $newFileName = uniqid().".".$fileExt;
+                    $filePath = "../uploads/".$newFileName;
+                    move_uploaded_file($fileTmpName,$filePath);
+                }
+            }
+        }
+        return $newFileName;
+    }
+
+    function generateMessage(){
+        if (isset($_GET["success"])) {
+            $successVal = $_GET["success"] == "true" ? true : false;
+            $alertClass = $successVal ? "alert-success" : "alert-danger";
+            echo '<div class="alert ' . $alertClass . '" role="alert">' . $_GET["message"] . '</div>';
+        }
+    }
+
+
     function renderInsertUpdateProductForm($isInsert=true,$id=0, $name="", $description="", $price=0, $quantity=0, $salePrice=0, $image=null){
         $hiddenTaskValue = $isInsert?'addRecord':'updateRecord';
         $submitButtonValue = $isInsert?'Add':'Update';
@@ -100,7 +144,7 @@ EOT;
         $htmlOutput= <<<EOT
 <div class="row">
 <div class="col">
-<form method="post" action="admin.php" enctype="multipart/form-data">
+<form method="post" action="addupdateproduct.php" enctype="multipart/form-data">
 <div class="form-group">
 <label for="nameField">Name</label>
 <input type="text" id="nameField" name="name" value="{$name}" class="form-control" required>
@@ -111,7 +155,7 @@ EOT;
 </div>
 <div class="form-group">
 <label for="priceField">Price</label>
-<input type="number" name="price" id="priceField" value="{$price}" class="form-control" required>
+<input type="number" name="price" id="priceField" value="{$price}" class="form-control" required step="0.01">  
 </div>
 <div class="form-group">
 <label for="quantityField">Quantity</label>
@@ -119,7 +163,7 @@ EOT;
 </div>
 <div class="form-group">
 <label for="salePriceField">Sale Price</label>
-<input type="number" name="salePrice" value="{$salePrice}" id="salePriceField" class="form-control">
+<input type="number" name="salePrice" value="{$salePrice}" id="salePriceField" class="form-control" step="0.01">
 </div>
 <div class="form-group">
 <img src="{$imageSrc}" id="imageSrcField" class="img-thumbnail add-product-image">
@@ -198,7 +242,7 @@ EOT;
         $name = $catalogProduct->getName();
         $id = $catalogProduct->getId();
         $description = $catalogProduct->getDescription();
-        $price = $catalogProduct->getPrice();
+        $price = '$'.$catalogProduct->getPrice();
         $quantity= $catalogProduct->getQuantity();
         $image=$catalogProduct->getImage();
         if(empty($image)){
@@ -206,11 +250,10 @@ EOT;
         }
         $productListHtml=$productListHtml.<<<EOT
 <div class="card" style="width: 18rem">
-<img src="../uploads/{$image}" class="card-img-top" alt="Product Image">
+<a class="image-link" data-id="{$id}" href="#"><img src="../uploads/{$image}" class="card-img-top" alt="Product Image"></a>
 <div class="card-body">
 <h5 class="card-title">{$name}</h5>
-<h5 class="card-title">{$price}$</h5>
-<p class="card-text">{$description}</p>
+<h5 class="card-title">{$price}</h5>
 <p class="card-text">Only {$quantity} left!</p>
 <a href="productList.php?addToCart=${id}" onclick="return confirm('Are you sure?')" class="btn btn-primary">Add to cart</a>
 </div>
@@ -252,7 +295,8 @@ EOT;
         $id = $catalogProduct->getId();
         $name = $catalogProduct->getName();
         $description = $catalogProduct->getDescription();
-        $price = $catalogProduct->getPrice();
+        $price = '$'.$catalogProduct->getPrice();
+        $salePrice = '$'.$catalogProduct->getSalePrice();
         $quantity= $catalogProduct->getQuantity();
         $image=$catalogProduct->getImage();
         if(empty($image)){
@@ -260,11 +304,11 @@ EOT;
         }
         $productListHtml=$productListHtml.<<<EOT
 <div class="card" style="width: 18rem">
-<img src="../uploads/{$image}" class="card-img-top" alt="Product Image">
+<a class="image-link" data-id="{$id}" href="#"><img src="../uploads/{$image}" class="card-img-top" alt="Product Image"></a>
 <div class="card-body">
 <h5 class="card-title">{$name}</h5>
-<h5 class="card-title">{$price}$</h5>
-<p class="card-text">{$description}</p>
+<h5 class="card-text text-linethrough">{$price}</h5>
+<h5 class="card-title text-green">{$salePrice}</h5>
 <p class="card-text">Only {$quantity} left!</p>
 <a href="productList.php?addToCart=${id}" onclick="return confirm('Are you sure?')" class="btn btn-primary">Add to cart</a>
 </div>
