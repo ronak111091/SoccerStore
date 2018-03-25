@@ -15,8 +15,11 @@ class Db
     function __construct(){
 
         try{
+
             $this->dbConnection = new PDO("mysql:host=localhost;dbname=test",
                 "root", "Password");
+//            $this->dbConnection = new PDO("mysql:host={$_SERVER['DB_SERVER']};dbname={$_SERVER['DB']}",
+//                $_SERVER['DB_USER'], $_SERVER['DB_PASSWORD']);
             $this->dbConnection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $pDOException){
             echo $pDOException->getMessage();
@@ -247,13 +250,15 @@ class Db
         }
     }
 
-    public function getSaleProductCount(){
+    public function getSaleProductCount($id){
         try{
-            $sqlQuery = "SELECT COUNT(*) FROM product WHERE sale_price>0";
+            $sqlQuery = "SELECT COUNT(*) FROM product WHERE sale_price>0 AND id!=:id";
 
             $stmt = $this->getDbConnection()->prepare($sqlQuery);
 
-            $stmt->execute();
+            $stmt->execute(array(
+                ":id"=>$id
+            ));
 
             return $stmt->fetchColumn();
         }catch (PDOException $pDOException){

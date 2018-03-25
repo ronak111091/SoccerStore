@@ -16,51 +16,69 @@
     if(isset($_POST["task"])){
 
         if($_POST["task"]=="addRecord"){
-            $fileName = moveImageToUploads();
             $success="false";
-            if(!empty($fileName)){
-                $result = addProduct($_POST["name"], $_POST["description"], $_POST["price"], $_POST["quantity"], $fileName, $_POST["salePrice"]);
-                if ($result) {
-                    $message = "Product was successfully added!";
-                    $success="true";
-                    header("Location: admin.php?success={$success}&message={$message}");
+            $message=validateAddUpdateFormInputValues($_POST["name"], $_POST["description"],  $_POST["quantity"],$_POST["price"],$_POST["salePrice"]);
+            if(empty($message)){
+                $fileName = moveImageToUploads();
+                if(!empty($fileName)){
+                    $result = addProduct($_POST["name"], $_POST["description"], $_POST["price"], $_POST["quantity"], $fileName, $_POST["salePrice"]);
+                    if ($result>0) {
+                        $message = "Product was successfully added!";
+                        $success="true";
+                        header("Location: admin.php?success={$success}&message={$message}");
+                    }else if($result<0){
+                        $message = "Operation failed! There cannot be more than 5 products on sale!";
+                        header("Location: addupdateproduct.php?insert=&success={$success}&message={$message}");
+                    } else{
+                        $message = "An error occurred while adding the product!";
+                        header("Location: addupdateproduct.php?insert=&success={$success}&message={$message}");
+                    }
                 }else{
-                    $message = "An error occurred while adding the product!";
-                    header("Location: admin.php?success={$success}&message={$message}");
+                    $message = "Invalid image uploaded!";
+                    header("Location: addupdateproduct.php?insert=&success={$success}&message={$message}");
                 }
             }else{
-                $message = "Invalid image uploaded!";
                 header("Location: addupdateproduct.php?insert=&success={$success}&message={$message}");
             }
+
         } else if($_POST["task"]=="updateRecord"){
             $id = $_POST["id"];
-            $fileName = moveImageToUploads();
-            if(empty($fileName)){
-                $fileName = $_POST["existingImage"];
-            }
-            $result = updateProduct($id,$_POST["name"], $_POST["description"], $_POST["price"], $_POST["quantity"],$_POST["salePrice"], $fileName);
-            if ($result) {
-                $message = "Product was successfully updated!";
-                $success="true";
-                header("Location: admin.php?success={$success}&message={$message}");
+            $success="false";
+            $message = validateAddUpdateFormInputValues($_POST["name"], $_POST["description"], $_POST["quantity"], $_POST["price"],$_POST["salePrice"]);
+            if(empty($message)){
+                $fileName = moveImageToUploads();
+                if(empty($fileName)){
+                    $fileName = $_POST["existingImage"];
+                }
+                $result = updateProduct($id,$_POST["name"], $_POST["description"], $_POST["price"], $_POST["quantity"],$_POST["salePrice"], $fileName);
+                if ($result>=0) {
+                    $message = "Product was successfully updated!";
+                    $success="true";
+                    header("Location: admin.php?success={$success}&message={$message}");
+                }else if($result<0){
+                    $message = "Operation failed! There can only be a minimum of 3 and a maximum of 5 products on sale!";
+                    header("Location: addupdateproduct.php?update=&id={$id}&success={$success}&message={$message}");
+                }
             }else{
-                $message = "An error occurred while adding the product!";
-                header("Location: admin.php?success={$success}&message={$message}");
+                header("Location: addupdateproduct.php?update=&id={$id}&success={$success}&message={$message}");
             }
+
         }
     }
 
 
 
-generateMessage();
+
 
 
 if(isset($_GET["insert"])){
         echo "<h1>Add Product</h1><br>";
+    generateMessage();
         renderInsertUpdateProductForm();
     }else if(isset($_GET["update"])){
         $id = $_GET["id"];
         echo "<h1>Update Product</h1><br>";
+    generateMessage();
         renderUpdateProductForm($id);
     }
 

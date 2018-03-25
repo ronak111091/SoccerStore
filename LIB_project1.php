@@ -5,12 +5,14 @@
  * Date: 12-03-2018
  * Time: 12:29
  */
-//add reusable code like header and footer here
 
     require_once 'classes/Db.php';
 
     $db = new Db();
 
+/**
+ * function to authenticate admin
+ */
     function authenticateAdmin(){
         //when user cancels authentication
         if (!isset($_SERVER['PHP_AUTH_USER'])) {
@@ -25,24 +27,38 @@
         }
     }
 
+/**
+ * function to render header section in page
+ */
     function renderHeader(){
         $header = <<<EOT
 <header>
+<div class="container">
 <h1>Soccer Store</h1>
+</div>
 </header>
 EOT;
     echo $header;
     }
 
+/**
+ * function to render footer section in page
+ */
     function renderFooter(){
         $footer = <<<EOT
+<div class="container">
 <footer>
 &copy; 2018 All rights reserved.
 </footer>
+</div>
 EOT;
 echo $footer;
     }
 
+/**
+ * @param int $activeTab
+ * funtion to render navigation tabs to the user
+ */
     function renderPublicSiteTabs($activeTab=1){
         $homeVal = $activeTab==1?"active":"";
         $cartVal = $activeTab==1?"":"active";
@@ -59,6 +75,11 @@ EOT;
     echo $header;
     }
 
+/**
+ * @param int $page
+ * @param string $query to search for a particular product.
+ * function to list all the available products in the application to the admin
+ */
     function displayProducts($page=1,$query=""){
         global $db;
         $rows = $db->getProductCount();
@@ -102,6 +123,10 @@ EOT;
         echo $output;
     }
 
+/**
+ * @return null|string
+ * function to move the image from tmp folder to the uploads folder on the server during image upload
+ */
     function moveImageToUploads(){
         $newFileName = null;
         $extTypes = array("jpeg","jpg","png");
@@ -123,6 +148,9 @@ EOT;
         return $newFileName;
     }
 
+/**
+ * simple functions that generates alerts based on the success and message params in get request.
+ */
     function generateMessage(){
         if (isset($_GET["success"])) {
             $successVal = $_GET["success"] == "true" ? true : false;
@@ -131,7 +159,17 @@ EOT;
         }
     }
 
-
+/**
+ * @param bool $isInsert
+ * @param int $id
+ * @param string $name
+ * @param string $description
+ * @param int $price
+ * @param int $quantity
+ * @param int $salePrice
+ * @param null $image
+ * function to render the insert/update form to the admin to add or update products.
+ */
     function renderInsertUpdateProductForm($isInsert=true,$id=0, $name="", $description="", $price=0, $quantity=0, $salePrice=0, $image=null){
         $hiddenTaskValue = $isInsert?'addRecord':'updateRecord';
         $submitButtonValue = $isInsert?'Add':'Update';
@@ -186,24 +224,98 @@ EOT;
         echo $htmlOutput;
     }
 
+/**
+ * @param $name
+ * @param $description
+ * @param $price
+ * @param int $quantity
+ * @param null $image
+ * @param int $sale_price
+ * @return int|string
+ * function to add products in database
+ */
     function addProduct($name, $description, $price, $quantity=0, $image=null,$sale_price=0){
         global $db;
-        $result = $db->insertProduct($name, $description, $price, $quantity, $image,$sale_price);
-        return $result;
+        //add constraints to check minimum and max sale requirements
+        if(checkNoOfItemsOnSale(0,true)){
+            $result = $db->insertProduct($name, $description, $price, $quantity, $image,$sale_price);
+            return $result;
+        }else{
+            return -1;
+        }
+
     }
 
+/**
+ * @param $id
+ * @param $name
+ * @param $description
+ * @param $price
+ * @param int $quantity
+ * @param int $sale_price
+ * @param null $image
+ * @return int
+ * function to update products in database
+ */
     function updateProduct($id,$name, $description, $price, $quantity=0,$sale_price=0,$image=null){
         global  $db;
-        $result = $db->updateProduct($id,$name,$description,$price,$quantity,$sale_price,$image);
+        //add constraints to check minimum and max sale requirements
+        $oldProduct = $db->getProductById($id);
+        $oldProductSalePrice = $oldProduct->getSalePrice();
+        $saleConstraint=true;
+        if($oldProductSalePrice!=$sale_price){
+            if($oldProductSalePrice==0){
+                $saleConstraint = checkNoOfItemsOnSale(0,true);
+            }else if($sale_price==0){
+                $saleConstraint = checkNoOfItemsOnSale($id,false);
+            }
+        }
+        if($saleConstraint){
+            $result = $db->updateProduct($id,$name,$description,$price,$quantity,$sale_price,$image);
+            return $result;
+        }else{
+            return -1;
+        }
+
+    }
+
+/**
+ * @param $id
+ * @param bool $add
+ * @return bool
+ * function to validate that there are always minimum of 3 and a maximum of 5 products on sale
+ */
+    function checkNoOfItemsOnSale($id,$add=true){
+        global $db;
+        $noOfSaleItems = $db->getSaleProductCount($id);
+        $result = true;
+        if($add){
+            if($noOfSaleItems>=5){
+                $result=false;
+            }
+        }else{
+            if($noOfSaleItems<3){
+                $result=false;
+            }
+        }
         return $result;
     }
 
+/**
+ * @param $id
+ * @return int
+ * function to delete products from the table
+ */
     function deleteProduct($id){
         global  $db;
         $result = $db->deleteProduct(array($id));
         return $result;
     }
 
+/**
+ * @param $id
+ * wrapper function to render the update form to the admin which in turn calls the renderInsertUpdateProductForm
+ */
     function renderUpdateProductForm($id){
         global  $db;
         $p = $db->getProductById($id);
@@ -213,21 +325,25 @@ EOT;
         }
     }
 
-function displayCatalogProductsForUser($page=1){
-        //using pagination
-    global $db;
-    $rows = $db->getCatalogProductCount();
-    $limit=6;
-    $totalPages = ceil($rows / $limit);
-    $offset = $limit*($page-1);
-    $previous = $page-1;
-    $next = $page+1;
-    $previousHidden = $previous==0?"hidden":"";
-    $nextHidden = $next>$totalPages?"hidden":"";
+/**
+ * @param int $page
+ * function to display all catalog products to the user along with pagination.
+ */
+    function displayCatalogProductsForUser($page=1){
+            //using pagination
+        global $db;
+        $rows = $db->getCatalogProductCount();
+        $limit=6;
+        $totalPages = ceil($rows / $limit);
+        $offset = $limit*($page-1);
+        $previous = $page-1;
+        $next = $page+1;
+        $previousHidden = $previous==0?"hidden":"";
+        $nextHidden = $next>$totalPages?"hidden":"";
 
-    $products = $db->getCatalogProducts($limit,$offset);
-    $label="Catalog";
-    $catalogHtml=<<<EOT
+        $products = $db->getCatalogProducts($limit,$offset);
+        $label="Catalog";
+        $catalogHtml=<<<EOT
 <div class="card">
 <h5 class="card-header">${label}</h5>
 <div class="card-body">
@@ -275,7 +391,9 @@ EOT;
     echo $catalogHtml;
 }
 
-
+/**
+ * function to display all products on sale.
+ */
 function displayOnSaleProductsForUser(){
     global $db;
     $products = $db->getSaleProducts();
@@ -327,6 +445,16 @@ EOT;
     echo $saleHtml;
 }
 
+/**
+ * @param $page
+ * @param $totalPages
+ * @param $previous
+ * @param $next
+ * @param $previousHidden
+ * @param $nextHidden
+ * @return string
+ * function to generate pagination for a table
+ */
     function generatePaginationHTML($page,$totalPages,$previous,$next,$previousHidden,$nextHidden){
         $pagination= <<<EOT
 <nav>
@@ -340,11 +468,22 @@ EOT;
         return $pagination;
     }
 
+/**
+ * @param $id
+ * @return int
+ * wrapper function that decrement the quantity of a product.
+ */
     function decrementProductQuantity($id){
         global $db;
         return $db->updateProductQuantity($id,false);
     }
 
+/**
+ * @param $id
+ * @param $amt
+ * @return int
+ * wrapper function that increments the quantity of a product based on the amt passed.
+ */
     function incrementProductQuantity($id,$amt){
         global $db;
         return $db->updateProductQuantity($id,true,$amt);
@@ -353,4 +492,47 @@ EOT;
     function getProductById($id){
         global $db;
         return $db->getProductById($id);
+    }
+
+    function sanitizeString($var){
+        $var = trim($var);
+        $var = stripslashes($var);
+        $var = htmlentities($var);
+        $var = strip_tags($var);
+        return $var;
+    }
+
+    function numeric($value) {
+        $reg = "/(^-?\d\d*\.\d*$)|(^-?\d\d*$)|(^-?\.\d\d*$)/";
+        return preg_match($reg,$value);
+    }
+
+    function numbers($value) {
+        $reg = "/^[0-9.]+$/";
+        return preg_match($reg,$value);
+    }
+
+    function validateAddUpdateFormInputValues($name,$description,$quantity,$price,$salePrice){
+        $name = sanitizeString($name);
+        $description = sanitizeString($description);
+        $price = sanitizeString($price);
+        $quantity = sanitizeString($quantity);
+
+        $errorMsg="";
+        if(empty($name)){
+            $errorMsg=$errorMsg."Please enter a valid value for name!<br>";
+        }
+
+        if(empty($description)){
+            $errorMsg=$errorMsg."Please enter a valid value for Description!<br>";
+        }
+
+        if($price=="" || !numbers($price) || $price<=0){
+            $errorMsg=$errorMsg."Please enter a valid value for Price!<br>";
+        }
+
+        if($quantity=="" || !numbers($quantity)){
+            $errorMsg=$errorMsg."Please enter a valid value for Quantity!<br>";
+        }
+        return $errorMsg;
     }

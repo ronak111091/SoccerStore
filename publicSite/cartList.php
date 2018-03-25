@@ -35,6 +35,8 @@
         echo '<div class="alert '.$alertClass. '" role="alert">'.$_GET["message"].'</div>';
     }
 
+    $allProductIds="";
+    $totalCartPrice=0;
     if(!empty($cart)){
         $rowNo = 1;
         $html = '<table class="table"><thead><tr><th width="10%" scope="col">#</th><th width="20%" scope="col">Image</th><th width="30%"  scope="col">Name</th><th scope="col" width="10%" >Price</th><th scope="col" width="10%" >Quantity</th><th scope="col" width="20%" ></th></tr></thead>';
@@ -42,7 +44,10 @@
             $product = getProductById($id);
             $name=$product->getName();
             $price = '$'.$product->getPrice();
+            $totalPrice=$product->getPrice()*$qty;
             $image = $product->getImage();
+            $allProductIds=$allProductIds.$id."-";
+            $totalCartPrice +=$totalPrice;
             if(empty($image)){
                 $image="../images/placeholder.png";
             }else{
@@ -65,8 +70,26 @@ EOT;
     }else{
         echo "<h4 class='alert alert-warning'>You don't have any items in the cart!</h4>";
     }
+    $total = '$'.$totalCartPrice;
+    $cartInfo=<<<EOT
+<div class="row">
+<div class="col">
+    <a href='cartAction.php?deleteItem={$allProductIds}' class='btn btn-danger float-left'>Empty cart</a>    
+</div>
+<div class="col">
+    <h3 class="float-right">Total: {$total}</h3>
+</div>
+</div>
+<div class="row">
+<div class="col">
+    <a href='productList.php' class='btn btn-primary float-left'>Continue Shopping</a>
+</div>
 
-    echo "<a href='productList.php' class='btn btn-primary'>Continue Shopping</a>";
+</div>
+EOT;
+    echo $cartInfo;
+//    echo "<a href='cartAction.php?deleteItem={$allProductIds}' class='btn btn-danger'>Empty cart</a><br><br>";
+//    echo "<a href='productList.php' class='btn btn-primary'>Continue Shopping</a>";
 
     echo '</div></main>';
     renderFooter();
