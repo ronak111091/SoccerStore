@@ -66,11 +66,6 @@
         }
     }
 
-
-
-
-
-
 if(isset($_GET["insert"])){
         echo "<h1>Add Product</h1><br>";
     generateMessage();

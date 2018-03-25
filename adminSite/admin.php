@@ -23,7 +23,6 @@
      * Time: 12:28
      */
 
-
     authenticateAdmin();
 
     /*function moveImageToUploads(){
